@@ -61,7 +61,7 @@ socketio = SocketIO(
     cors_allowed_origins=cors_origins, 
     logger=not is_production, 
     engineio_logger=not is_production,
-    async_mode='eventlet'
+    async_mode='gevent'
 )
 
 # Socket error handling
@@ -617,5 +617,5 @@ if __name__ == "__main__":
     debug = os.getenv("FLASK_ENV", "production") == "development"
     
     print(f"Starting Flask server in DEVELOPMENT mode on http://{host}:{port}")
-    print("⚠️  For production, use: gunicorn --worker-class eventlet -w 1 --bind 0.0.0.0:5000 wsgi:app")
+    print("⚠️  For production, use: gunicorn --worker-class gevent -w 1 --bind 0.0.0.0:5000 wsgi:app")
     socketio.run(app, host=host, port=port, debug=debug, allow_unsafe_werkzeug=True)  

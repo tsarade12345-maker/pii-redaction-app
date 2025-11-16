@@ -11,8 +11,8 @@ bind = f"0.0.0.0:{port}"
 backlog = 2048
 
 # Worker processes
-workers = 1  # Flask-SocketIO requires 1 worker with eventlet
-worker_class = "eventlet"
+workers = 1  # Flask-SocketIO requires 1 worker with gevent
+worker_class = "gevent"
 worker_connections = 1000
 timeout = 120
 keepalive = 5
