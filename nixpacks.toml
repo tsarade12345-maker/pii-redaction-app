@@ -1,0 +1,19 @@
+[phases.setup]
+nixPkgs = ["python311", "tesseract", "poppler_utils"]
+
+[phases.install]
+cmds = [
+  "cd backend",
+  "pip install -r requirements.txt",
+  "python -m spacy download en_core_web_sm"
+]
+
+[phases.build]
+cmds = [
+  "cd backend",
+  "echo 'Build complete'"
+]
+
+[start]
+cmd = "cd backend && gunicorn --config gunicorn_config.py wsgi:application"
+
