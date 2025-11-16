@@ -1,8 +1,14 @@
 import re
-import spacy
 
-# Load SpaCy's English language model
-nlp = spacy.load("en_core_web_sm")
+# Load SpaCy's English language model (optional)
+try:
+    import spacy
+    nlp = spacy.load("en_core_web_sm")
+    SPACY_AVAILABLE = True
+except Exception as e:
+    print(f"⚠️ spaCy not available: {e}")
+    nlp = None
+    SPACY_AVAILABLE = False
 
 # Define regex patterns for PII detection
 PII_PATTERNS = {
@@ -110,16 +116,20 @@ def detect_pii(text):
         if matches:
             detected_pii[pii_type] = matches
 
-    # Detect PII using SpaCy
-    doc = nlp(text)
-    for ent in doc.ents:
-        if ent.label_ in [
-            "PERSON",
-            "DATE",
-            "GPE",
-        ]:  # PERSON = Name, DATE = Date, GPE = Location
-            if ent.label_ not in detected_pii:
-                detected_pii[ent.label_] = []
-            detected_pii[ent.label_].append(ent.text)
+    # Detect PII using SpaCy (if available)
+    if SPACY_AVAILABLE and nlp:
+        try:
+            doc = nlp(text)
+            for ent in doc.ents:
+                if ent.label_ in [
+                    "PERSON",
+                    "DATE",
+                    "GPE",
+                ]:  # PERSON = Name, DATE = Date, GPE = Location
+                    if ent.label_ not in detected_pii:
+                        detected_pii[ent.label_] = []
+                    detected_pii[ent.label_].append(ent.text)
+        except Exception as e:
+            print(f"⚠️ Error using spaCy: {e}")
 
     return detected_pii

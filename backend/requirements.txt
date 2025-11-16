@@ -1,5 +1,5 @@
 # Minimal requirements for PII Redaction WebApp - Render Compatible
-# Only includes packages that can install without system dependencies
+# Using only packages with pre-built wheels to avoid compilation issues
 
 # Web Framework
 Flask==3.0.2
@@ -8,26 +8,24 @@ Flask-SocketIO==5.5.1
 gunicorn==21.2.0
 eventlet==0.33.3
 
-# Image Processing (basic - no OpenCV for now)
+# Image Processing
 Pillow==10.1.0
 
-# PDF Processing (will need poppler on server)
+# PDF Processing
 pdf2image==1.17.0
 fpdf==1.7.2
 
-# OCR (will need tesseract on server - may fail but app will handle gracefully)
+# OCR
 pytesseract==0.3.13
 
-# PII Detection
-presidio_analyzer==2.2.357
-spacy==3.8.4
-spacy-legacy==3.0.12
+# PII Detection - using latest compatible versions
+presidio-analyzer==2.2.357
 
 # Speech Recognition
 SpeechRecognition==3.14.1
 
 # Core Dependencies
-numpy==1.24.2
+numpy==1.26.4
 python-engineio==4.11.2
 python-socketio==5.12.1
 Werkzeug==3.0.1
@@ -47,15 +45,7 @@ urllib3==2.1.0
 
 # Presidio dependencies
 pydantic==2.11.2
-pydantic_core==2.33.1
 typing_extensions==4.12.2
 
-# spaCy dependencies
-srsly==2.4.8
-catalogue==2.0.10
-wasabi==0.10.1
-thinc==8.3.4
-cymem==2.0.8
-preshed==3.0.9
-murmurhash==1.0.10
-blis==1.3.2
+# spaCy - will be installed separately via model download
+# Note: spaCy model will be downloaded during build

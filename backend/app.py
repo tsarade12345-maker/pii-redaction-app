@@ -107,22 +107,28 @@ REDACTED_FOLDER = "redacted_documents"
 os.makedirs(REDACTED_FOLDER, exist_ok=True)
 
 
-# Initialize AnalyzerEngine with the small model to avoid downloading large models
+# Initialize AnalyzerEngine
+# Try to use spaCy model if available, otherwise use default
 try:
-    from presidio_analyzer.nlp_engine import NlpEngineProvider
-    
-    # Configure to use the small spaCy model we already have
-    configuration = {
-        "nlp_engine_name": "spacy",
-        "models": [{"lang_code": "en", "model_name": "en_core_web_sm"}]
-    }
-    
-    provider = NlpEngineProvider(nlp_configuration=configuration)
-    nlp_engine = provider.create_engine()
-    analyzer = AnalyzerEngine(nlp_engine=nlp_engine)
-except Exception as e:
-    print(f"Warning: Could not configure Presidio with specific model: {e}")
-    print("Falling back to default AnalyzerEngine")
+    import spacy
+    # Try to load spaCy model
+    try:
+        nlp = spacy.load("en_core_web_sm")
+        from presidio_analyzer.nlp_engine import NlpEngineProvider
+        configuration = {
+            "nlp_engine_name": "spacy",
+            "models": [{"lang_code": "en", "model_name": "en_core_web_sm"}]
+        }
+        provider = NlpEngineProvider(nlp_configuration=configuration)
+        nlp_engine = provider.create_engine()
+        analyzer = AnalyzerEngine(nlp_engine=nlp_engine)
+        print("✅ Presidio configured with spaCy model")
+    except Exception as spacy_error:
+        print(f"⚠️ spaCy model not available: {spacy_error}")
+        print("Using default AnalyzerEngine (may have limited PII detection)")
+        analyzer = AnalyzerEngine()
+except ImportError:
+    print("⚠️ spaCy not installed, using default AnalyzerEngine")
     analyzer = AnalyzerEngine()
 
 def play_alert_sound():
