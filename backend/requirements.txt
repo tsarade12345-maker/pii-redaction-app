@@ -9,7 +9,7 @@ gunicorn==21.2.0
 eventlet==0.33.3
 
 # Image Processing
-Pillow==10.1.0
+Pillow==10.4.0
 
 # PDF Processing
 pdf2image==1.17.0
