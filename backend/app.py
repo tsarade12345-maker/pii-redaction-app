@@ -253,13 +253,15 @@ def preprocess_image(image):
     """
     Preprocess the image to improve OCR accuracy.
     """
-    
-    gray = cv2.cvtColor(np.array(image), cv2.COLOR_BGR2GRAY)
-    
-    blurred = cv2.GaussianBlur(gray, (5, 5), 0)
-    
-    _, thresholded = cv2.threshold(blurred, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-    return Image.fromarray(thresholded)
+    try:
+        import cv2
+        gray = cv2.cvtColor(np.array(image), cv2.COLOR_BGR2GRAY)
+        blurred = cv2.GaussianBlur(gray, (5, 5), 0)
+        _, thresholded = cv2.threshold(blurred, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+        return Image.fromarray(thresholded)
+    except ImportError:
+        # If OpenCV is not available, return image as-is
+        return image
 
 
 def redact_text(text, detected_pii):
@@ -281,8 +283,12 @@ def mask_image(image, detected_pii, redaction_level):
     
     levels_order = ['basic', 'intermediate', 'critical']
 
-    
-    image_cv = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR)
+    try:
+        import cv2
+        image_cv = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR)
+    except ImportError:
+        # If OpenCV is not available, return image as-is
+        return image
 
     
     custom_config = r"--oem 3 --psm 6"
@@ -313,11 +319,19 @@ def mask_image(image, detected_pii, redaction_level):
                                 data["height"][i],
                             )
                             
-                            cv2.rectangle(
-                                image_cv, (x, y), (x + w, y + h), (0, 0, 0), -1
-                            )  
+                            try:
+                                import cv2
+                                cv2.rectangle(
+                                    image_cv, (x, y), (x + w, y + h), (0, 0, 0), -1
+                                )
+                            except ImportError:
+                                pass
 
-    return Image.fromarray(cv2.cvtColor(image_cv, cv2.COLOR_BGR2RGB))
+    try:
+        import cv2
+        return Image.fromarray(cv2.cvtColor(image_cv, cv2.COLOR_BGR2RGB))
+    except ImportError:
+        return image
 
 
 @app.route("/upload", methods=["POST"])

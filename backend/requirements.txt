@@ -1,5 +1,5 @@
-# Minimal requirements for PII Redaction WebApp
-# Only includes packages actually used by the application
+# Minimal requirements for PII Redaction WebApp - Render Compatible
+# Only includes packages that can install without system dependencies
 
 # Web Framework
 Flask==3.0.2
@@ -8,16 +8,14 @@ Flask-SocketIO==5.5.1
 gunicorn==21.2.0
 eventlet==0.33.3
 
-# Image Processing
+# Image Processing (basic - no OpenCV for now)
 Pillow==10.1.0
-opencv-python==4.10.0.84
-opencv-python-headless==4.10.0.84
 
-# PDF Processing
+# PDF Processing (will need poppler on server)
 pdf2image==1.17.0
 fpdf==1.7.2
 
-# OCR
+# OCR (will need tesseract on server - may fail but app will handle gracefully)
 pytesseract==0.3.13
 
 # PII Detection
@@ -61,4 +59,3 @@ cymem==2.0.8
 preshed==3.0.9
 murmurhash==1.0.10
 blis==1.3.2
-
