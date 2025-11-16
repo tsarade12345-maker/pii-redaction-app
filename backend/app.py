@@ -6,7 +6,7 @@ from flask_socketio import SocketIO, emit
 import pytesseract
 from pdf2image import convert_from_bytes
 from PIL import Image
-import cv2
+# cv2 is optional - imported when needed
 import numpy as np
 import io
 from utils.pii_detector import detect_pii
