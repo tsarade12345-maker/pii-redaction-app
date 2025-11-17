@@ -4,9 +4,10 @@ nixPkgs = ["python311", "tesseract", "poppler_utils"]
 [phases.install]
 cmds = [
   "cd backend",
-  "pip install -r requirements.txt",
-  "python -m spacy download en_core_web_sm"
+  "pip install -r requirements.txt"
 ]
+# Note: spaCy model download removed to avoid memory issues on free tier
+# The app works without it using default AnalyzerEngine
 
 [phases.build]
 cmds = [
