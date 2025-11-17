@@ -1,0 +1,6 @@
+# Prevent installation of large spaCy models
+--no-deps en-core-web-lg
+--no-deps en-core-web-sm
+--no-deps en_core_web_lg
+--no-deps en_core_web_sm
+

@@ -18,6 +18,7 @@ fpdf==1.7.2
 pytesseract==0.3.13
 
 # PII Detection - using latest compatible versions
+# Note: presidio-analyzer may install spacy as a dependency, but models are NOT needed
 presidio-analyzer==2.2.357
 
 # Speech Recognition
@@ -46,5 +47,6 @@ urllib3==2.1.0
 pydantic==2.11.2
 typing_extensions==4.12.2
 
-# spaCy - will be installed separately via model download
-# Note: spaCy model will be downloaded during build
+# spaCy is NOT required - presidio-analyzer works without it
+# The app will use default AnalyzerEngine if spaCy is not available
+# DO NOT install spaCy models during build to avoid memory issues

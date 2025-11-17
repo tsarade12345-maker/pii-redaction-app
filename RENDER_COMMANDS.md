@@ -3,13 +3,20 @@
 ## Build Command
 
 ```
+pip install -r requirements.txt --constraint <(echo "--no-deps en-core-web-lg --no-deps en-core-web-sm") || pip install -r requirements.txt
+```
+
+**OR (simpler, recommended):**
+
+```
 pip install -r requirements.txt
 ```
 
 **What this does:**
 - Installs all Python packages from requirements.txt
 - Note: spaCy model is optional - the app will work without it using default AnalyzerEngine
-- If you want the spaCy model, you can add it later, but it's not required for basic functionality
+- If presidio-analyzer installs spacy, that's fine - but models are NOT needed
+- The app will work without spaCy models using default AnalyzerEngine
 
 ## Start Command
 
