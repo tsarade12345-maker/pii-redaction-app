@@ -14,9 +14,9 @@ backlog = 2048
 print(f"🚀 Starting server on {bind}")
 
 # Worker processes
-workers = 1  # Flask-SocketIO requires 1 worker with threading mode
+workers = 2  # Can use multiple workers without SocketIO
 worker_class = "sync"
-threads = 4  # Use threads for concurrency
+threads = 2  # Use threads for concurrency
 timeout = 120
 keepalive = 5
 

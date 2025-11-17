@@ -8,10 +8,9 @@ import os
 print(f"🔧 PORT environment variable: {os.getenv('PORT', 'NOT SET')}")
 print(f"🔧 FLASK_ENV: {os.getenv('FLASK_ENV', 'NOT SET')}")
 
-from app import app, socketio
+from app import app
 
-# For production with gunicorn + threading mode
-# Flask-SocketIO works with sync workers using threads in gunicorn
+# For production with gunicorn
 application = app
 
 print("✅ WSGI application loaded successfully")

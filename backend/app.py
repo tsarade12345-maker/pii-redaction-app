@@ -2,7 +2,6 @@
 import os
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
-from flask_socketio import SocketIO, emit
 import pytesseract
 from pdf2image import convert_from_bytes
 from PIL import Image
@@ -10,10 +9,8 @@ from PIL import Image
 import numpy as np
 import io
 from utils.pii_detector import detect_pii
-import speech_recognition as sr
 import re
 from presidio_analyzer import AnalyzerEngine
-from datetime import datetime
 
 # winsound is Windows-only, make it optional
 try:
@@ -56,34 +53,7 @@ app = Flask(__name__)
 # Configure CORS for production
 # In production, specify allowed origins instead of '*'
 cors_origins = os.getenv("CORS_ORIGINS", "*").split(",")
-CORS(app, origins=cors_origins, supports_credentials=True)  
-
-
-# Configure SocketIO for production
-# In production, logger and engineio_logger should be False
-is_production = os.getenv("FLASK_ENV", "production") == "production"
-socketio = SocketIO(
-    app, 
-    cors_allowed_origins=cors_origins, 
-    logger=not is_production, 
-    engineio_logger=not is_production,
-    async_mode='threading'
-)
-
-# Socket error handling
-@socketio.on_error()
-def error_handler(e):
-    print('SocketIO Error:', str(e))
-    socketio.emit('error', {'message': str(e)})
-
-@socketio.on('connect')
-def handle_connect():
-    print('👤 Client connected')
-    socketio.emit('connection_status', {'status': 'connected'})
-
-@socketio.on('disconnect')
-def handle_disconnect():
-    print('👤 Client disconnected')
+CORS(app, origins=cors_origins, supports_credentials=True)
 
 
 # POPPLER_PATH - Auto-detect Poppler installation
@@ -229,43 +199,6 @@ PII_CATEGORIES = {
     "EMAIL_ADDRESS": r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b"
 }
 
-
-def detect_pii_audio(text):
-    detected_pii = []
-    
-    
-    results = analyzer.analyze(text=text, language="en")
-
-    
-    for r in results:
-        detected_pii.append((r.entity_type, text[r.start:r.end]))
-
-    
-    for category, pattern in PII_CATEGORIES.items():
-        matches = re.finditer(pattern, text)
-        for match in matches:
-            detected_pii.append((category, match.group()))
-
-    if detected_pii:
-        print("\n⚠️ PII Detected! Sensitive Information Found:")
-        for entity, value in detected_pii:
-            print(f"🔴 Entity: {entity}, Text: {value}")
-        
-        play_alert_sound()  
-        return True
-
-    return False
-    
-
-
-def detect_context(text):
-    for pii_type, phrases in CONTEXT_REFERENCES.items():
-        for phrase in phrases:
-            if phrase.lower() in text.lower():
-                print(f"⚠️ Potential PII Context Detected: {pii_type}")
-                play_alert_sound()
-                return pii_type  
-    return None
 
 
 def preprocess_image(image):
@@ -465,8 +398,6 @@ def upload_document():
 
         redacted_text = redact_text(text, filtered_pii)
 
-        socketio.emit("pii_detected", {"detected_pii": filtered_pii})
-
         return jsonify(
             {
                 "text": text,
@@ -481,138 +412,6 @@ def upload_document():
         traceback.print_exc()
         return jsonify({"error": f"Upload failed: {str(e)}"}), 500
 
-# Global variable to track transcription state
-is_transcribing = False
-
-@socketio.on("start_transcription")
-def handle_transcription(data):
-    global is_transcribing
-    
-    if is_transcribing:
-        print("⚠️ Transcription already in progress")
-        socketio.emit('error', {'message': 'Transcription already in progress'})
-        return
-    
-    is_transcribing = True
-    
-    recognizer = sr.Recognizer()
-    silence_counter = 0
-
-    try:
-        # Notify client that transcription is starting
-        socketio.emit('transcription_status', {'status': 'starting'})
-        print("🎤 Starting transcription...")
-        
-        # Check if microphone is available
-        try:
-            microphone = sr.Microphone()
-            # List available microphones for debugging
-            mic_list = sr.Microphone.list_microphone_names()
-            print(f"📱 Available microphones: {len(mic_list)}")
-            if len(mic_list) == 0:
-                raise Exception("No microphones found")
-        except Exception as mic_error:
-            print(f"❌ Microphone error: {str(mic_error)}")
-            socketio.emit('error', {'message': f'Microphone not available: {str(mic_error)}'})
-            is_transcribing = False
-            return
-        
-        with microphone as source:
-            print("🎤 Listening... Speak now!")
-            socketio.emit('transcription_status', {'status': 'listening'})
-            
-            # Adjust for ambient noise with timeout
-            try:
-                print("🔊 Adjusting for ambient noise...")
-                recognizer.adjust_for_ambient_noise(source, duration=1)
-                print("✅ Adjusted for ambient noise")
-            except Exception as noise_error:
-                print(f"⚠️ Could not adjust for noise: {str(noise_error)}")
-                # Continue anyway
-
-            while silence_counter < 6 and is_transcribing:
-                try:
-                    audio = recognizer.listen(source, timeout=5, phrase_time_limit=10)
-                    text = recognizer.recognize_google(audio)
-
-                    print("📝 Transcription:", text)
-
-                    # Send transcription update to client
-                    print(f"📤 Sending transcription_update -> {text}")
-                    socketio.emit("transcription_update", {
-                        "text": text,
-                        "timestamp": str(datetime.now())
-                    })
-
-                    # Check for PII in context
-                    context_pii = detect_context(text)
-                    if context_pii:
-                        print(f"📤 Sending pii_alert (context) -> {context_pii}")
-                        socketio.emit("pii_alert", {
-                            "type": context_pii,
-                            "value": text,
-                            "source": "context",
-                            "timestamp": str(datetime.now())
-                        })
-
-                    # Check for PII in content
-                    if detect_pii_audio(text):
-                        print(f"📤 Sending pii_alert (content) -> PII detected")
-                        socketio.emit("pii_alert", {
-                            "type": "PII",
-                            "value": text,
-                            "source": "content",
-                            "timestamp": str(datetime.now())
-                        })
-
-                    silence_counter = 0
-
-                except sr.WaitTimeoutError:
-                    print("⏳ No speech detected, still listening...")
-                    socketio.emit('transcription_status', {'status': 'waiting'})
-                    silence_counter += 1
-                except sr.UnknownValueError:
-                    print("❌ Could not understand the audio")
-                    socketio.emit('transcription_status', {'status': 'unclear'})
-                except sr.RequestError as e:
-                    print(f"❌ API unavailable: {str(e)}")
-                    socketio.emit('error', {'message': f'Speech recognition service unavailable: {str(e)}'})
-                    socketio.emit('transcription_status', {'status': 'error', 'message': str(e)})
-                    break
-                except Exception as e:
-                    print(f"❌ Unexpected error in transcription loop: {str(e)}")
-                    import traceback
-                    traceback.print_exc()
-                    socketio.emit('error', {'message': f'Transcription error: {str(e)}'})
-                    # Continue listening
-                    continue
-
-        print("🔴 Transcription stopped")
-        socketio.emit("transcription_complete", {
-            "status": "done",
-            "reason": "timeout" if silence_counter >= 6 else "stopped"
-        })
-    
-    except KeyboardInterrupt:
-        print("🛑 Transcription interrupted by user")
-        socketio.emit('transcription_status', {'status': 'stopped'})
-    except Exception as e:
-        print(f"❌ Error in transcription: {str(e)}")
-        import traceback
-        traceback.print_exc()
-        socketio.emit('error', {'message': f'Transcription failed: {str(e)}'})
-        socketio.emit('transcription_status', {'status': 'error', 'message': str(e)})
-    
-    finally:
-        is_transcribing = False
-        print("🔴 Transcription stopped and cleaned up")
-
-@socketio.on("stop_transcription")
-def handle_stop_transcription():
-    global is_transcribing
-    print("🛑 Stop transcription requested")
-    is_transcribing = False
-    socketio.emit('transcription_status', {'status': 'stopped'})
 
 @app.route("/download/<filename>", methods=["GET"])
 def download_file(filename):
@@ -631,4 +430,4 @@ if __name__ == "__main__":
     
     print(f"Starting Flask server in DEVELOPMENT mode on http://{host}:{port}")
     print("⚠️  For production, use: gunicorn --worker-class sync --threads 4 -w 1 --bind 0.0.0.0:5000 wsgi:app")
-    socketio.run(app, host=host, port=port, debug=debug, allow_unsafe_werkzeug=True)  
+    app.run(host=host, port=port, debug=debug)  

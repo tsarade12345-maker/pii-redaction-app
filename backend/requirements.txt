@@ -4,7 +4,6 @@
 # Web Framework
 Flask==3.0.2
 flask-cors==5.0.1
-Flask-SocketIO==5.5.1
 gunicorn==21.2.0
 
 # Image Processing
@@ -21,13 +20,8 @@ pytesseract==0.3.13
 # Note: presidio-analyzer may install spacy as a dependency, but models are NOT needed
 presidio-analyzer==2.2.357
 
-# Speech Recognition
-SpeechRecognition==3.14.1
-
 # Core Dependencies
 numpy==1.26.4
-python-engineio==4.11.2
-python-socketio==5.12.1
 Werkzeug==3.0.1
 Jinja2==3.1.3
 MarkupSafe==2.1.5
