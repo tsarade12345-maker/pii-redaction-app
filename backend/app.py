@@ -5,12 +5,17 @@ from flask_cors import CORS
 import pytesseract
 from pdf2image import convert_from_bytes
 from PIL import Image
-# cv2 is optional - imported when needed
-import numpy as np
+# cv2 and numpy are optional - imported when needed
 import io
 from utils.pii_detector import detect_pii
 import re
-from presidio_analyzer import AnalyzerEngine
+# presidio-analyzer is optional - only used if available
+try:
+    from presidio_analyzer import AnalyzerEngine
+    PRESIDIO_AVAILABLE = True
+except ImportError:
+    PRESIDIO_AVAILABLE = False
+    print("⚠️ presidio-analyzer not available - using regex-only PII detection")
 
 # winsound is Windows-only, make it optional
 try:
@@ -83,29 +88,18 @@ REDACTED_FOLDER = "redacted_documents"
 os.makedirs(REDACTED_FOLDER, exist_ok=True)
 
 
-# Initialize AnalyzerEngine
-# Try to use spaCy model if available, otherwise use default
-try:
-    import spacy
-    # Try to load spaCy model
+# Initialize AnalyzerEngine (optional - only if presidio is available)
+# Using regex-only detection to save memory
+analyzer = None
+if PRESIDIO_AVAILABLE:
     try:
-        nlp = spacy.load("en_core_web_sm")
-        from presidio_analyzer.nlp_engine import NlpEngineProvider
-        configuration = {
-            "nlp_engine_name": "spacy",
-            "models": [{"lang_code": "en", "model_name": "en_core_web_sm"}]
-        }
-        provider = NlpEngineProvider(nlp_configuration=configuration)
-        nlp_engine = provider.create_engine()
-        analyzer = AnalyzerEngine(nlp_engine=nlp_engine)
-        print("✅ Presidio configured with spaCy model")
-    except Exception as spacy_error:
-        print(f"⚠️ spaCy model not available: {spacy_error}")
-        print("Using default AnalyzerEngine (may have limited PII detection)")
         analyzer = AnalyzerEngine()
-except ImportError:
-    print("⚠️ spaCy not installed, using default AnalyzerEngine")
-    analyzer = AnalyzerEngine()
+        print("✅ Presidio AnalyzerEngine available")
+    except Exception as e:
+        print(f"⚠️ Presidio initialization failed: {e}")
+        analyzer = None
+else:
+    print("ℹ️ Using regex-only PII detection (presidio-analyzer not installed)")
 
 def play_alert_sound():
     """Play alert sound if available (Windows only)"""
@@ -207,12 +201,13 @@ def preprocess_image(image):
     """
     try:
         import cv2
+        import numpy as np
         gray = cv2.cvtColor(np.array(image), cv2.COLOR_BGR2GRAY)
         blurred = cv2.GaussianBlur(gray, (5, 5), 0)
         _, thresholded = cv2.threshold(blurred, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
         return Image.fromarray(thresholded)
-    except ImportError:
-        # If OpenCV is not available, return image as-is
+    except (ImportError, NameError):
+        # If OpenCV or numpy is not available, return image as-is
         return image
 
 
@@ -281,8 +276,9 @@ def mask_image(image, detected_pii, redaction_level):
 
     try:
         import cv2
+        import numpy as np
         return Image.fromarray(cv2.cvtColor(image_cv, cv2.COLOR_BGR2RGB))
-    except ImportError:
+    except (ImportError, NameError):
         return image
 
 
