@@ -45,7 +45,7 @@ ENV FLASK_ENV=production
 ENV PYTHONUNBUFFERED=1
 
 # Install production WSGI server
-RUN pip install --no-cache-dir gunicorn gevent
+RUN pip install --no-cache-dir gunicorn
 
 # Run the application with production server using config file
 CMD ["gunicorn", "--config", "gunicorn_config.py", "wsgi:application"]
