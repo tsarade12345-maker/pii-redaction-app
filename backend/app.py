@@ -232,9 +232,10 @@ def mask_image(image, detected_pii, redaction_level):
 
     try:
         import cv2
+        import numpy as np
         image_cv = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR)
-    except ImportError:
-        # If OpenCV is not available, return image as-is
+    except (ImportError, NameError):
+        # If OpenCV or numpy is not available, return image as-is
         return image
 
     
