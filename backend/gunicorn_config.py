@@ -10,6 +10,9 @@ port = int(os.getenv('PORT', '5000'))
 bind = f"0.0.0.0:{port}"
 backlog = 2048
 
+# Print port for debugging
+print(f"🚀 Starting server on {bind}")
+
 # Worker processes
 workers = 1  # Flask-SocketIO requires 1 worker with threading mode
 worker_class = "sync"
