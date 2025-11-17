@@ -13,8 +13,14 @@ from utils.pii_detector import detect_pii
 import speech_recognition as sr
 import re
 from presidio_analyzer import AnalyzerEngine
-import winsound
 from datetime import datetime
+
+# winsound is Windows-only, make it optional
+try:
+    import winsound
+    WINSOUND_AVAILABLE = True
+except ImportError:
+    WINSOUND_AVAILABLE = False
 
 # Check if Tesseract is installed
 TESSERACT_AVAILABLE = False
@@ -132,9 +138,16 @@ except ImportError:
     analyzer = AnalyzerEngine()
 
 def play_alert_sound():
-    frequency = 1000  
-    duration = 500  
-    winsound.Beep(frequency, duration)  
+    """Play alert sound if available (Windows only)"""
+    if WINSOUND_AVAILABLE:
+        try:
+            frequency = 1000  
+            duration = 500  
+            winsound.Beep(frequency, duration)
+        except Exception:
+            # Silently fail if sound can't be played
+            pass
+    # On Linux/Unix, we can't play sounds, so just skip  
 
 
 
